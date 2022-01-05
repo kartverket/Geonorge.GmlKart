@@ -9,16 +9,16 @@ namespace Geonorge.GmlKart.Application.HttpClients
 {
     public class ValidationHttpClient : IValidationHttpClient
     {
+        private readonly HttpClient _httpClient;
         private readonly ValidationSettings _settings;
         private readonly ILogger<ValidationHttpClient> _logger;
-        public HttpClient Client { get; }
 
         public ValidationHttpClient(
-            HttpClient client,
+            HttpClient httpClient,
             IOptions<ValidationSettings> options,
             ILogger<ValidationHttpClient> logger)
         {
-            Client = client;
+            _httpClient = httpClient;
             _settings = options.Value;
             _logger = logger;
         }
@@ -56,7 +56,7 @@ namespace Geonorge.GmlKart.Application.HttpClients
                 using var content = new MultipartFormDataContent { { new StreamContent(file.OpenReadStream()), "xmlFiles", file.FileName } };
                 using var request = new HttpRequestMessage(HttpMethod.Post, _settings.ApiUrl) { Content = content };
 
-                using var response = await Client.SendAsync(request);
+                using var response = await _httpClient.SendAsync(request);
                 response.EnsureSuccessStatusCode();
 
                 var responseString = await response.Content.ReadAsStringAsync();
