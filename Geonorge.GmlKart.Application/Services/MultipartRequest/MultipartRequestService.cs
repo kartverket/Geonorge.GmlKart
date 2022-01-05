@@ -23,16 +23,23 @@ namespace Geonorge.GmlKart.Application.Services
             var reader = new MultipartReader(request.GetMultipartBoundary(), request.Body);
             MultipartSection section;
 
-            while ((section = await reader.ReadNextSectionAsync()) != null)
+            try
             {
-                if (!ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition))
-                    continue;
+                while ((section = await reader.ReadNextSectionAsync()) != null)
+                {
+                    if (!ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition))
+                        continue;
 
-                if (contentDisposition.IsFileDisposition() && contentDisposition.Name.Value == "gmlFile" && await IsGml32File(section))
-                    return await CreateFormFile(contentDisposition, section);
+                    if (contentDisposition.IsFileDisposition() && contentDisposition.Name.Value == "gmlFile" && await IsGml32File(section))
+                        return await CreateFormFile(contentDisposition, section);
+                }
+
+                return null;
             }
-
-            return null;
+            catch
+            {
+                return null;
+            }
         }
 
         private static async Task<bool> IsGml32File(MultipartSection section)
