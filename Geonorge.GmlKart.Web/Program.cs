@@ -3,6 +3,7 @@ using Geonorge.GmlKart.Application.Services;
 using Geonorge.Validator.Web;
 using Microsoft.AspNetCore.ResponseCompression;
 using OSGeo.OGR;
+using Serilog;
 using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,10 +36,17 @@ services.AddHttpClient<IValidationHttpClient, ValidationHttpClient>();
 
 services.Configure<ValidationSettings>(configuration.GetSection(ValidationSettings.SectionName));
 
-var app = builder.Build();
-
 Ogr.RegisterAll();
 Ogr.UseExceptions();
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .ReadFrom.Configuration(configuration)
+    .CreateLogger();
+
+builder.Logging.AddSerilog(Log.Logger, true);
+
+var app = builder.Build();
 
 app.UseSwagger();
 
@@ -61,5 +69,7 @@ app.UseAuthorization();
 app.UseResponseCompression();
 
 app.MapControllers();
+
+app.Lifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
 app.Run();
