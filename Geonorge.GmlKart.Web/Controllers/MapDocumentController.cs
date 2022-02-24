@@ -22,18 +22,18 @@ namespace Geonorge.GmlKart.Web.Controllers
         }
 
         [HttpPost]
-        [RequestFormLimits(MultipartBodyLengthLimit = 25_000_000)]
-        [RequestSizeLimit(25_000_000)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 26_214_400)]
+        [RequestSizeLimit(26_214_400)]
         public async Task<IActionResult> CreateMapDocument()
         {
             try
             {
-                var file = await _multipartRequestService.GetFileFromMultipart();
+                var formData = await _multipartRequestService.GetFileFromMultipart();
 
-                if (file == null)
+                if (formData == null)
                     return BadRequest();
 
-                var document = await _mapDocumentService.CreateMapDocumentAsync(file);
+                var document = await _mapDocumentService.CreateMapDocumentAsync(formData.File, formData.Validate);
                 var serialized = JsonConvert.SerializeObject(document, DefaultJsonSerializerSettings);
 
                 return Ok(serialized);

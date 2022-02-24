@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Geonorge.GmlKart.Application.Models;
 
 namespace Geonorge.GmlKart.Application.Services
 {
     public interface IMultipartRequestService
     {
-        Task<IFormFile> GetFileFromMultipart();
+        Task<FormData> GetFileFromMultipart();
     }
 }

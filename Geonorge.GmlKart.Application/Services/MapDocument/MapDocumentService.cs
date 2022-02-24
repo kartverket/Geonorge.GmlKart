@@ -1,6 +1,7 @@
 ﻿using Geonorge.GmlKart.Application.Exceptions;
 using Geonorge.GmlKart.Application.HttpClients;
 using Geonorge.GmlKart.Application.Models.Map;
+using Geonorge.GmlKart.Application.Models.Validation;
 using Microsoft.AspNetCore.Http;
 using System.Xml.Linq;
 using Wmhelp.XPath2;
@@ -20,18 +21,27 @@ namespace Geonorge.GmlKart.Application.Services
             _gmlToGeoJsonService = gmlToGeoJsonService;
         }
 
-        public async Task<MapDocument> CreateMapDocumentAsync(IFormFile file)
+        public async Task<MapDocument> CreateMapDocumentAsync(IFormFile file, bool validate)
         {
-            var validationResult = await _validationHttpClient.ValidateAsync(file);
-
-            if (!validationResult.XsdValidated || !validationResult.EpsgValidated)
+            ValidationResult validationResult;
+            
+            if (validate)
             {
-                return new MapDocument
+                validationResult = await _validationHttpClient.ValidateAsync(file);
+
+                if (!validationResult.XsdValidated || !validationResult.EpsgValidated)
                 {
-                    FileName = file.FileName,
-                    FileSize = file.Length,
-                    ValidationResult = validationResult
-                };
+                    return new MapDocument
+                    {
+                        FileName = file.FileName,
+                        FileSize = file.Length,
+                        ValidationResult = validationResult
+                    };
+                }
+            }
+            else
+            {
+                validationResult = new();
             }
 
             var document = await LoadXDocumentAsync(file);
@@ -63,7 +73,7 @@ namespace Geonorge.GmlKart.Application.Services
         {
             try
             {
-                return await XDocument.LoadAsync(file.OpenReadStream(), LoadOptions.None, new CancellationToken());
+                return await XDocument.LoadAsync(file.OpenReadStream(), LoadOptions.None, default);
             }
             catch (Exception exception)
             {

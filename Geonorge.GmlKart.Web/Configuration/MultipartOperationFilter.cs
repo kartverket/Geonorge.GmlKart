@@ -21,6 +21,10 @@ namespace Geonorge.Validator.Web
                         {
                             Type = "file",
                             Format = "binary"
+                        },
+                        ["validate"] = new OpenApiSchema
+                        {
+                            Type = "boolean"
                         }
                     },
                     Required = new HashSet<string>() { "gmlFile" }

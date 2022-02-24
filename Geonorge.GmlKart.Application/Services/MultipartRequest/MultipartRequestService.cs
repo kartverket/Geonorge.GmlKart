@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Geonorge.GmlKart.Application.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Geonorge.GmlKart.Application.Services
@@ -17,10 +19,11 @@ namespace Geonorge.GmlKart.Application.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<IFormFile> GetFileFromMultipart()
+        public async Task<FormData> GetFileFromMultipart()
         {
             var request = _httpContextAccessor.HttpContext.Request;
             var reader = new MultipartReader(request.GetMultipartBoundary(), request.Body);
+            var formData = new FormData();
             MultipartSection section;
 
             try
@@ -30,29 +33,27 @@ namespace Geonorge.GmlKart.Application.Services
                     if (!ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition))
                         continue;
 
-                    if (contentDisposition.IsFileDisposition() && contentDisposition.Name.Value == "gmlFile" && await IsGml32File(section))
-                        return await CreateFormFile(contentDisposition, section);
-                }
+                    var name = contentDisposition.Name.Value;
 
-                return null;
+                    if (contentDisposition.IsFileDisposition() && name == "gmlFile" && await IsGml32File(section) && formData.File == null)
+                    {
+                        formData.File = await CreateFormFile(contentDisposition, section);
+                    }
+                    else if (contentDisposition.IsFormDisposition() && name == "validate")
+                    {
+                        var value = await GetFormValue(section, contentDisposition);
+
+                        if (bool.TryParse(value, out var validate))
+                            formData.Validate = false;
+                    }
+                }
             }
             catch
             {
                 return null;
             }
-        }
 
-        private static async Task<bool> IsGml32File(MultipartSection section)
-        {
-            var buffer = new byte[500];
-            await section.Body.ReadAsync(buffer.AsMemory(0, 500));
-            section.Body.Position = 0;
-
-            using var memoryStream = new MemoryStream(buffer);
-            using var streamReader = new StreamReader(memoryStream);
-            var gmlString = streamReader.ReadToEnd();
-
-            return _gml32Regex.IsMatch(gmlString);
+            return formData.File != null ? formData : null;
         }
 
         private static async Task<IFormFile> CreateFormFile(ContentDispositionHeaderValue contentDisposition, MultipartSection section)
@@ -67,6 +68,40 @@ namespace Geonorge.GmlKart.Application.Services
                 Headers = new HeaderDictionary(),
                 ContentType = section.ContentType
             };
+        }
+
+        private static async Task<string> GetFormValue(MultipartSection section, ContentDispositionHeaderValue contentDisposition)
+        {
+            using var streamReader = new StreamReader(section.Body, GetEncoding(section), true, 1024, true);
+            
+            return await streamReader.ReadToEndAsync();
+        }
+
+        private static async Task<bool> IsGml32File(MultipartSection section)
+        {
+            var buffer = new byte[1000];
+            await section.Body.ReadAsync(buffer.AsMemory(0, 1000));
+            section.Body.Position = 0;
+
+            using var memoryStream = new MemoryStream(buffer);
+            using var streamReader = new StreamReader(memoryStream);
+            var gmlString = streamReader.ReadToEnd();
+
+            return _gml32Regex.IsMatch(gmlString);
+        }
+
+        private static Encoding GetEncoding(MultipartSection section)
+        {
+            var hasMediaTypeHeader = MediaTypeHeaderValue.TryParse(section.ContentType, out var mediaType);
+
+            #pragma warning disable SYSLIB0001
+            if (!hasMediaTypeHeader || Encoding.UTF7.Equals(mediaType.Encoding))
+            #pragma warning restore SYSLIB0001
+            {
+                return Encoding.UTF8;
+            }
+
+            return mediaType.Encoding;
         }
     }
 }

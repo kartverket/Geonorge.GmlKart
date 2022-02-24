@@ -98,32 +98,13 @@ namespace Geonorge.GmlKart.Application.Services
 
         private static Geometry GetGeometry(XElement geoElement)
         {
-            if (!TryCreateGeometry(geoElement, out var tempGeometry))
+            if (!TryCreateGeometry(geoElement, out var geometry))
                 return null;
 
-            if (!geoElement.Descendants(GmlNs + "Arc").Any())
-                return tempGeometry;
+            var linearGeometry = geometry.GetLinearGeometry(0, Array.Empty<string>());
+            geometry.Dispose();
 
-            Geometry geometry = null;
-            var geometryType = tempGeometry.GetGeometryType();
-
-            switch (geometryType)
-            {
-                case wkbGeometryType.wkbCircularString:
-                    geometry = Ogr.ForceToLineString(tempGeometry);
-                    break;
-                case wkbGeometryType.wkbSurface:
-                    geometry = Ogr.ForceToPolygon(tempGeometry);
-                    break;
-                case wkbGeometryType.wkbMultiSurface:
-                    geometry = Ogr.ForceToMultiPolygon(tempGeometry);
-                    break;
-                default:
-                    break;
-            }
-
-            tempGeometry.Dispose();
-            return geometry;
+            return linearGeometry;
         }
 
         private static List<XElement> GetFeatureMembers(XDocument document)
