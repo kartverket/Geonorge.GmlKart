@@ -74,9 +74,9 @@ namespace Geonorge.GmlKart.Application.Services
             return geoElements.SingleOrDefault(kvp => kvp.Key == elementName);
         }
 
-        private static Dictionary<string, GeoJsonGeometry> CreateOtherGeoJsonGeometries(Dictionary<string, XElement> geoElements)
+        private static Dictionary<string, JObject> CreateOtherGeoJsonGeometries(Dictionary<string, XElement> geoElements)
         {
-            var otherGeometries = new Dictionary<string, GeoJsonGeometry>();
+            var otherGeometries = new Dictionary<string, JObject>();
 
             if (!geoElements.Any())
                 return otherGeometries;
@@ -132,52 +132,15 @@ namespace Geonorge.GmlKart.Application.Services
             }
         }
 
-        private static GeoJsonGeometry CreateGeoJson(Geometry geometry)
+        private static JObject CreateGeoJson(Geometry geometry)
         {
             var json = geometry.ExportToJson(Array.Empty<string>());
 
-            if (json == null)
-                return null;
-
-            var jObject = JObject.Parse(json);
-            var type = jObject["type"].ToString();
-            var coordinates = jObject["coordinates"].ToString();
-
-            if (type == GeometryType.Point)
-            {
-                return new Point(type, JsonConvert.DeserializeObject<double[]>(coordinates));
-            }
-
-            if (type == GeometryType.MultiPoint)
-            {
-                return new MultiPoint(type, JsonConvert.DeserializeObject<double[][]>(coordinates));
-            }
-
-            if (type == GeometryType.LineString)
-            {
-                return new LineString(type, JsonConvert.DeserializeObject<double[][]>(coordinates));
-            }
-
-            if (type == GeometryType.MultiLineString)
-            {
-                return new MultiLineString(type, JsonConvert.DeserializeObject<double[][][]>(coordinates));
-            }
-
-            if (type == GeometryType.Polygon)
-            {
-                return new Polygon(type, JsonConvert.DeserializeObject<double[][][]>(coordinates));
-            }
-
-            if (type == GeometryType.MultiPolygon)
-            {
-                return new MultiPolygon(type, JsonConvert.DeserializeObject<double[][][][]>(coordinates));
-            }
-
-            return null;
+            return JObject.Parse(json);
         }
 
         private static JObject CreateProperties(
-            XElement featureMember, string featureName, string gmlId, Dictionary<string, GeoJsonGeometry> otherGeometries)
+            XElement featureMember, string featureName, string gmlId, Dictionary<string, JObject> otherGeometries)
         {
             featureMember.Name = "values";
 
@@ -194,10 +157,7 @@ namespace Geonorge.GmlKart.Application.Services
             values.Add(new JProperty("label", $"{featureName} '{gmlId}'"));
 
             foreach (var (propName, geoJson) in otherGeometries)
-            {
-                var geoJsonJObject = JObject.Parse(JsonConvert.SerializeObject(geoJson, DefaultJsonSerializerSettings));
-                values.Add(new JProperty(propName, geoJsonJObject));
-            }
+                values.Add(new JProperty(propName, geoJson));
 
             return jObject["values"] as JObject;
         }

@@ -48,7 +48,7 @@ namespace Geonorge.GmlKart.Application.Services
                     }
                 }
             }
-            catch
+            catch (Exception ec)
             {
                 return null;
             }
