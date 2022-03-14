@@ -22,8 +22,8 @@ namespace Geonorge.GmlKart.Web.Controllers
         }
 
         [HttpPost]
-        [RequestFormLimits(MultipartBodyLengthLimit = 26_214_400)]
-        [RequestSizeLimit(26_214_400)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 104_857_600)]
+        [RequestSizeLimit(104_857_600)]
         public async Task<IActionResult> CreateMapDocument()
         {
             try

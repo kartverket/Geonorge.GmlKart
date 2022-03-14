@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Geonorge.GmlKart.Application.Models.Map
+﻿namespace Geonorge.GmlKart.Application.Models.Map
 {
     public class GeoJsonFeatureCollection
     {

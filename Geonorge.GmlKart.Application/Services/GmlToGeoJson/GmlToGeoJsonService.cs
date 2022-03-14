@@ -18,18 +18,18 @@ namespace Geonorge.GmlKart.Application.Services
             var featureMembers = GetFeatureMembers(document);
             var featureCollection = new GeoJsonFeatureCollection();
 
-            foreach (var featureMember in featureMembers)
+            Parallel.ForEach(featureMembers, featureMember =>
             {
                 var geoElements = GetGeometryElements(featureMember);
                 var primaryGeoElement = GetPrimaryGeometryElement(featureMember.Name.LocalName, geoElements, geoElementMappings);
 
                 if (primaryGeoElement.Value == null)
-                    continue;
+                    return;
 
                 using var geometry = GetGeometry(primaryGeoElement.Value);
 
                 if (geometry == null)
-                    continue;
+                    return;
 
                 geoElements.Remove(primaryGeoElement.Key);
                 primaryGeoElement.Value.Parent.Remove();
@@ -38,14 +38,14 @@ namespace Geonorge.GmlKart.Application.Services
                 var otherGeoJsonGeometries = CreateOtherGeoJsonGeometries(geoElements);
 
                 feature.Properties = CreateProperties(
-                    featureMember, 
-                    featureMember.Name.LocalName, 
-                    featureMember.Attribute(GmlNs + "id").Value, 
+                    featureMember,
+                    featureMember.Name.LocalName,
+                    featureMember.Attribute(GmlNs + "id").Value,
                     otherGeoJsonGeometries
                 );
 
                 featureCollection.Features.Add(feature);
-            }
+            });
 
             return featureCollection;
         }
