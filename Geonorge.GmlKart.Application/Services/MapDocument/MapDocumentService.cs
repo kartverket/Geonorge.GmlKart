@@ -46,7 +46,7 @@ namespace Geonorge.GmlKart.Application.Services
             }
 
             var document = await LoadXDocumentAsync(file);
-
+            
             if (document == null)
                 return null;
 
