@@ -1,8 +1,7 @@
-﻿using Geonorge.GmlKart.Application.Helpers;
-using Geonorge.GmlKart.Application.Services;
+﻿using Geonorge.GmlKart.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+using static Geonorge.GmlKart.Application.Constants.Constants;
 
 namespace Geonorge.GmlKart.Web.Controllers
 {
@@ -10,35 +9,32 @@ namespace Geonorge.GmlKart.Web.Controllers
     [Route("[controller]")]
     public class MapDocumentController : BaseController
     {
-        private static readonly JsonSerializerSettings _jsonSerializerSettings = new()
-        {
-            ContractResolver = new DefaultContractResolver { NamingStrategy = new CamelCaseNamingStrategy() }
-        };
-
         private readonly IMapDocumentService _mapDocumentService;
+        private readonly IMultipartRequestService _multipartRequestService;
 
         public MapDocumentController(
             IMapDocumentService mapDocumentService,
+            IMultipartRequestService multipartRequestService,
             ILogger<MapDocumentController> logger) : base(logger)
         {
             _mapDocumentService = mapDocumentService;
+            _multipartRequestService = multipartRequestService;
         }
 
         [HttpPost]
-        [RequestFormLimits(MultipartBodyLengthLimit = 25_000_000)]
-        [RequestSizeLimit(25_000_000)]
-        public async Task<IActionResult> CreateMapDocument(IFormFile file)
+        [RequestFormLimits(MultipartBodyLengthLimit = 104_857_600)]
+        [RequestSizeLimit(104_857_600)]
+        public async Task<IActionResult> CreateMapDocument()
         {
             try
             {
-                if (file == null)
+                var formData = await _multipartRequestService.GetFileFromMultipart();
+
+                if (formData == null)
                     return BadRequest();
 
-                if (!FileHelper.IsGmlFile(file))
-                    return BadRequest($"Filen '{file.FileName}' er ikke en gyldig GML-fil.");
-
-                var document = await _mapDocumentService.CreateMapDocumentAsync(file);
-                var serialized = JsonConvert.SerializeObject(document, _jsonSerializerSettings);
+                var document = await _mapDocumentService.CreateMapDocumentAsync(formData.File, formData.Validate);
+                var serialized = JsonConvert.SerializeObject(document, DefaultJsonSerializerSettings);
 
                 return Ok(serialized);
             }
