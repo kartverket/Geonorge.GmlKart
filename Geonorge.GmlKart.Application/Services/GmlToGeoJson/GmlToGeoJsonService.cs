@@ -3,17 +3,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OSGeo.OGR;
 using System.Text;
-using System.Xml;
 using System.Xml.Linq;
-using Wmhelp.XPath2;
+using static Geonorge.GmlKart.Application.Constants.Constants;
 
 namespace Geonorge.GmlKart.Application.Services
 {
     public class GmlToGeoJsonService : IGmlToGeoJsonService
     {
-        private static readonly XNamespace _gmlNs = "http://www.opengis.net/gml/3.2";
-        private static readonly XmlNamespaceManager _namespaceManager = CreateNamespaceManager();
-        
         public GeoJsonFeatureCollection CreateGeoJsonDocument(XDocument document, Dictionary<string, string> geoElementMappings = null)
         {
             if (document == null)
@@ -22,68 +18,93 @@ namespace Geonorge.GmlKart.Application.Services
             var featureMembers = GetFeatureMembers(document);
             var featureCollection = new GeoJsonFeatureCollection();
 
-            foreach (var featureMember in featureMembers)
+            Parallel.ForEach(featureMembers, featureMember =>
             {
-                var geoElement = GetGeometryElement(featureMember, geoElementMappings);
+                var geoElements = GetGeometryElements(featureMember);
+                var primaryGeoElement = GetPrimaryGeometryElement(featureMember.Name.LocalName, geoElements, geoElementMappings);
 
-                if (geoElement == null)
-                    continue;
+                if (primaryGeoElement.Value == null)
+                    return;
 
+                using var geometry = GetGeometry(primaryGeoElement.Value);
+
+                if (geometry == null)
+                    return;
+
+                geoElements.Remove(primaryGeoElement.Key);
+                primaryGeoElement.Value.Parent.Remove();
+
+                var feature = new GeoJsonFeature { Geometry = CreateGeoJson(geometry) };
+                var otherGeoJsonGeometries = CreateOtherGeoJsonGeometries(geoElements);
+
+                feature.Properties = CreateProperties(
+                    featureMember,
+                    featureMember.Name.LocalName,
+                    featureMember.Attribute(GmlNs + "id").Value,
+                    otherGeoJsonGeometries
+                );
+
+                featureCollection.Features.Add(feature);
+            });
+
+            return featureCollection;
+        }
+
+        public static Dictionary<string, XElement> GetGeometryElements(XElement featureMember)
+        {
+            return featureMember.Descendants()
+                .Where(element => GmlGeometryElementNames.Contains(element.Name.LocalName) &&
+                    element.Parent.Name.Namespace != element.Parent.GetNamespaceOfPrefix("gml"))
+                .Select(element => (element.Parent.Name.LocalName, element))
+                .ToDictionary(tuple => tuple.LocalName, tuple => tuple.element);
+        }
+
+        private static KeyValuePair<string, XElement> GetPrimaryGeometryElement(
+            string featureName, Dictionary<string, XElement> geoElements, Dictionary<string, string> geoElementMappings = null)
+        {
+            if (!geoElements.Any())
+                return default;
+
+            if (geoElements.Count == 1)
+                return geoElements.First();
+
+            if (geoElementMappings == null || !geoElementMappings.TryGetValue(featureName, out var elementName))
+                return geoElements.First();
+
+            return geoElements.SingleOrDefault(kvp => kvp.Key == elementName);
+        }
+
+        private static Dictionary<string, JObject> CreateOtherGeoJsonGeometries(Dictionary<string, XElement> geoElements)
+        {
+            var otherGeometries = new Dictionary<string, JObject>();
+
+            if (!geoElements.Any())
+                return otherGeometries;
+
+            foreach (var (elementName, geoElement) in geoElements)
+            {
                 using var geometry = GetGeometry(geoElement);
 
                 if (geometry == null)
                     continue;
 
-                var feature = new GeoJsonFeature { Geometry = GetGeometry(geometry) };
-
-                geoElement.Remove();
-
-                feature.Properties = CreateProperties(featureMember, featureMember.Name.LocalName, featureMember.Attribute(_gmlNs + "id").Value);
-
-                featureCollection.Features.Add(feature);
+                var geoJson = CreateGeoJson(geometry);
+                otherGeometries.Add(elementName, geoJson);
+                geoElement.Parent.Remove();
             }
 
-            return featureCollection;
-        }
-
-        private static XElement GetGeometryElement(XElement featureMember, Dictionary<string, string> geoElementMappings)
-        {
-            if (geoElementMappings != null && geoElementMappings.TryGetValue(featureMember.Name.LocalName, out var xPath))
-                xPath = $"*:{xPath}/*";
-            else
-                xPath = "*/gml:*";
-
-            return featureMember.XPath2SelectElement(xPath, _namespaceManager);
+            return otherGeometries;
         }
 
         private static Geometry GetGeometry(XElement geoElement)
         {
-            if (!TryCreateGeometry(geoElement, out var tempGeometry))
+            if (!TryCreateGeometry(geoElement, out var geometry))
                 return null;
 
-            if (!geoElement.Descendants(_gmlNs + "Arc").Any())
-                return tempGeometry;
+            var linearGeometry = geometry.GetLinearGeometry(0, Array.Empty<string>());
+            geometry.Dispose();
 
-            Geometry geometry = null;
-            var geometryType = tempGeometry.GetGeometryType();
-
-            switch (geometryType)
-            {
-                case wkbGeometryType.wkbCircularString:
-                    geometry = Ogr.ForceToLineString(tempGeometry);
-                    break;
-                case wkbGeometryType.wkbSurface:
-                    geometry = Ogr.ForceToPolygon(tempGeometry);
-                    break;
-                case wkbGeometryType.wkbMultiSurface:
-                    geometry = Ogr.ForceToMultiPolygon(tempGeometry);
-                    break;
-                default:
-                    break;
-            }
-
-            tempGeometry.Dispose();
-            return geometry;
+            return linearGeometry;
         }
 
         private static List<XElement> GetFeatureMembers(XDocument document)
@@ -111,51 +132,15 @@ namespace Geonorge.GmlKart.Application.Services
             }
         }
 
-        private static GeoJsonGeometry GetGeometry(Geometry geometry)
+        private static JObject CreateGeoJson(Geometry geometry)
         {
             var json = geometry.ExportToJson(Array.Empty<string>());
 
-            if (json == null)
-                return null;
-
-            var jObject = JObject.Parse(json);
-            var type = jObject["type"].ToString();
-            var coordinates = jObject["coordinates"].ToString();
-
-            if (type == GeometryType.Point)
-            {
-                return new Point(type, JsonConvert.DeserializeObject<double[]>(coordinates));
-            }
-
-            if (type == GeometryType.MultiPoint)
-            {
-                return new MultiPoint(type, JsonConvert.DeserializeObject<double[][]>(coordinates));
-            }
-
-            if (type == GeometryType.LineString)
-            {
-                return new LineString(type, JsonConvert.DeserializeObject<double[][]>(coordinates));
-            }
-
-            if (type == GeometryType.MultiLineString)
-            {
-                return new MultiLineString(type, JsonConvert.DeserializeObject<double[][][]>(coordinates));
-            }
-
-            if (type == GeometryType.Polygon)
-            {
-                return new Polygon(type, JsonConvert.DeserializeObject<double[][][]>(coordinates));
-            }
-
-            if (type == GeometryType.MultiPolygon)
-            {
-                return new MultiPolygon(type, JsonConvert.DeserializeObject<double[][][][]>(coordinates));
-            }
-
-            return null;
+            return JObject.Parse(json);
         }
 
-        private static JObject CreateProperties(XElement featureMember, string featureName, string gmlId)
+        private static JObject CreateProperties(
+            XElement featureMember, string featureName, string gmlId, Dictionary<string, JObject> otherGeometries)
         {
             featureMember.Name = "values";
 
@@ -171,15 +156,10 @@ namespace Geonorge.GmlKart.Application.Services
             values.Add(new JProperty("name", featureName));
             values.Add(new JProperty("label", $"{featureName} '{gmlId}'"));
 
+            foreach (var (propName, geoJson) in otherGeometries)
+                values.Add(new JProperty(propName, geoJson));
+
             return jObject["values"] as JObject;
-        }
-
-        private static XmlNamespaceManager CreateNamespaceManager()
-        {
-            var namespaceManager = new XmlNamespaceManager(new NameTable());
-            namespaceManager.AddNamespace("gml", _gmlNs.NamespaceName);
-
-            return namespaceManager;
         }
     }
 }
