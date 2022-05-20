@@ -1,8 +1,10 @@
-﻿namespace Geonorge.GmlKart.Application.Models.Map
+﻿using System.Collections.Concurrent;
+
+namespace Geonorge.GmlKart.Application.Models.Map
 {
     public class GeoJsonFeatureCollection
     {
         public string Type { get; } = "FeatureCollection";
-        public List<GeoJsonFeature> Features { get; set; } = new();
+        public ConcurrentBag<GeoJsonFeature> Features { get; set; } = new();
     }
 }
