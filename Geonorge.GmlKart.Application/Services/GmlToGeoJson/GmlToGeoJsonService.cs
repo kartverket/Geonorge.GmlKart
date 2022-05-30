@@ -153,8 +153,8 @@ namespace Geonorge.GmlKart.Application.Services
             var jObject = JObject.Parse(builder.ToString());
             var values = jObject["values"] as JObject;
 
-            values.Add(new JProperty("name", featureName));
-            values.Add(new JProperty("label", $"{featureName} '{gmlId}'"));
+            values.Add(new JProperty("_name", featureName));
+            values.Add(new JProperty("_label", $"{featureName} '{gmlId}'"));
 
             foreach (var (propName, geoJson) in otherGeometries)
                 values.Add(new JProperty(propName, geoJson));
