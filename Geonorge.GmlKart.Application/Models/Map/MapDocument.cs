@@ -1,4 +1,5 @@
-﻿using Geonorge.GmlKart.Application.Models.Validation;
+﻿using Geonorge.GmlKart.Application.Models.Config.Styling;
+using Geonorge.GmlKart.Application.Models.Validation;
 
 namespace Geonorge.GmlKart.Application.Models.Map
 {
@@ -9,5 +10,6 @@ namespace Geonorge.GmlKart.Application.Models.Map
         public Epsg Epsg { get; set; }
         public GeoJsonFeatureCollection GeoJson { get; set; } = new();
         public ValidationResult ValidationResult { get; set; }
+        public MapStyling Styling { get; set; }
     }
 }

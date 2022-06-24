@@ -1,7 +1,7 @@
 ﻿using Geonorge.GmlKart.Application.Models.Validation;
 using Microsoft.AspNetCore.Http;
 
-namespace Geonorge.GmlKart.Application.HttpClients
+namespace Geonorge.GmlKart.Application.HttpClients.Validation
 {
     public interface IValidationHttpClient
     {

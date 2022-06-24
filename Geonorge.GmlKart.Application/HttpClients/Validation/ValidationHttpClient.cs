@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
-namespace Geonorge.GmlKart.Application.HttpClients
+namespace Geonorge.GmlKart.Application.HttpClients.Validation
 {
     public class ValidationHttpClient : IValidationHttpClient
     {

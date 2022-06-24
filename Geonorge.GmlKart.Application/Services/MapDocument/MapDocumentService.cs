@@ -1,25 +1,33 @@
 ﻿using Geonorge.GmlKart.Application.Exceptions;
-using Geonorge.GmlKart.Application.HttpClients;
+using Geonorge.GmlKart.Application.HttpClients.Validation;
+using Geonorge.GmlKart.Application.Models.Config.Styling;
 using Geonorge.GmlKart.Application.Models.Map;
 using Geonorge.GmlKart.Application.Models.Validation;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using static Geonorge.GmlKart.Application.Helpers.Helpers;
 
 namespace Geonorge.GmlKart.Application.Services
 {
     public class MapDocumentService : IMapDocumentService
     {
         private static readonly Regex _srsNameRegex = new(@"srsName=""(http:\/\/www\.opengis\.net\/def\/crs\/EPSG\/0\/|urn:ogc:def:crs:EPSG::)(?<epsg>\d+)""");
+
+
         private readonly IValidationHttpClient _validationHttpClient;
         private readonly IGmlToGeoJsonService _gmlToGeoJsonService;
+        private readonly StylingSettings _stylingSettings;
 
         public MapDocumentService(
             IValidationHttpClient validationHttpClient,
-            IGmlToGeoJsonService gmlToGeoJsonService)
+            IGmlToGeoJsonService gmlToGeoJsonService,
+            IOptions<StylingSettings> options)
         {
             _validationHttpClient = validationHttpClient;
             _gmlToGeoJsonService = gmlToGeoJsonService;
+            _stylingSettings = options.Value;
         }
 
         public async Task<MapDocument> CreateMapDocumentAsync(IFormFile file, bool validate)
@@ -36,7 +44,8 @@ namespace Geonorge.GmlKart.Application.Services
                     {
                         FileName = file.FileName,
                         FileSize = file.Length,
-                        ValidationResult = validationResult
+                        ValidationResult = validationResult,
+                        Styling = GetMapStyling(file)
                     };
                 }
             }
@@ -44,7 +53,7 @@ namespace Geonorge.GmlKart.Application.Services
             {
                 validationResult = new();
             }
-
+                        
             var document = await LoadXDocumentAsync(file);
             
             if (document == null)
@@ -56,8 +65,20 @@ namespace Geonorge.GmlKart.Application.Services
                 FileSize = file.Length,
                 Epsg = await GetEpsgAsync(file),
                 GeoJson = _gmlToGeoJsonService.CreateGeoJsonDocument(document),
-                ValidationResult = validationResult
+                ValidationResult = validationResult,
+                Styling = GetMapStyling(file)
             };
+        }
+
+        private MapStyling GetMapStyling(IFormFile file)
+        {
+            var @namespace = GetDefaultNamespace(file);
+            var mapStyling = _stylingSettings.Specifications.SingleOrDefault(specification => specification.Value.Namespace == @namespace);
+
+            if (!mapStyling.Equals(default(KeyValuePair<string, MapStyling>)))
+                return mapStyling.Value;
+
+            return null;
         }
 
         private static async Task<Epsg> GetEpsgAsync(IFormFile file)

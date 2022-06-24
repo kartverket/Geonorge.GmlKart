@@ -1,4 +1,6 @@
-using Geonorge.GmlKart.Application.HttpClients;
+using Geonorge.GmlKart.Application.HttpClients.Proxy;
+using Geonorge.GmlKart.Application.HttpClients.Validation;
+using Geonorge.GmlKart.Application.Models.Config.Styling;
 using Geonorge.GmlKart.Application.Services;
 using Geonorge.Validator.Web;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -21,6 +23,8 @@ services.AddResponseCompression(options =>
     options.Providers.Add<GzipCompressionProvider>();
 });
 
+services.AddResponseCaching();
+
 services.AddControllers();
 
 services.AddEndpointsApiExplorer();
@@ -33,8 +37,10 @@ services.AddTransient<IGmlToGeoJsonService, GmlToGeoJsonService>();
 services.AddTransient<IMapDocumentService, MapDocumentService>();
 services.AddTransient<IMultipartRequestService, MultipartRequestService>();
 services.AddHttpClient<IValidationHttpClient, ValidationHttpClient>();
+services.AddHttpClient<IProxyHttpClient, ProxyHttpClient>();
 
 services.Configure<ValidationSettings>(configuration.GetSection(ValidationSettings.SectionName));
+services.Configure<StylingSettings>(configuration.GetSection("Styling"));
 
 Ogr.RegisterAll();
 Ogr.UseExceptions();
@@ -63,6 +69,8 @@ app.Use(async (context, next) => {
 });
 
 app.UseHttpsRedirection();
+
+app.UseResponseCaching();
 
 app.UseAuthorization();
 

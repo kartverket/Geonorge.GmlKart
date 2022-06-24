@@ -1,4 +1,4 @@
-﻿namespace Geonorge.GmlKart.Application.HttpClients
+﻿namespace Geonorge.GmlKart.Application.HttpClients.Validation
 {
     public class ValidationSettings
     {
