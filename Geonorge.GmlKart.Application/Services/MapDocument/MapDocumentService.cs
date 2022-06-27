@@ -13,8 +13,7 @@ namespace Geonorge.GmlKart.Application.Services
 {
     public class MapDocumentService : IMapDocumentService
     {
-        private static readonly Regex _srsNameRegex = new(@"srsName=""(http:\/\/www\.opengis\.net\/def\/crs\/EPSG\/0\/|urn:ogc:def:crs:EPSG::)(?<epsg>\d+)""");
-
+        private static readonly Regex _srsNameRegex = new(@"srsName=""(http:\/\/www\.opengis\.net\/def\/crs\/EPSG\/0\/|urn:ogc:def:crs:EPSG::|EPSG:)(?<epsg>\d+)""");
 
         private readonly IValidationHttpClient _validationHttpClient;
         private readonly IGmlToGeoJsonService _gmlToGeoJsonService;
@@ -55,11 +54,8 @@ namespace Geonorge.GmlKart.Application.Services
             }
                         
             var document = await LoadXDocumentAsync(file);
-            
-            if (document == null)
-                return null;
 
-            return new MapDocument
+            var mapDocument = new MapDocument
             {
                 FileName = file.FileName,
                 FileSize = file.Length,
@@ -68,6 +64,11 @@ namespace Geonorge.GmlKart.Application.Services
                 ValidationResult = validationResult,
                 Styling = GetMapStyling(file)
             };
+
+            if (!mapDocument.GeoJson.Features.Any())
+                throw new MapDocumentException("GML-filen inneholder ingen gyldige features.");
+
+            return mapDocument;
         }
 
         private MapStyling GetMapStyling(IFormFile file)
@@ -105,7 +106,7 @@ namespace Geonorge.GmlKart.Application.Services
             }
             catch (Exception exception)
             {
-                throw new CouldNotLoadXDocumentException("Kunne ikke laste GML-filen.", exception);
+                throw new MapDocumentException("Kunne ikke lese GML-filen.", exception);
             }
         }
     }
