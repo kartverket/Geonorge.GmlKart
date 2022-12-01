@@ -10,7 +10,7 @@ namespace Geonorge.GmlKart.Application.Services
 {
     public class MultipartRequestService : IMultipartRequestService
     {
-        private static readonly Regex _gml32Regex = new(@"^<\?xml.*?<gml:FeatureCollection.*?xmlns:gml=""http:\/\/www\.opengis\.net\/gml\/3\.2""", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _gml32Regex = new(@"^<\?xml.*?<\w+:FeatureCollection.*?xmlns:\w+=""http:\/\/www\.opengis\.net\/gml\/3\.2""", RegexOptions.Compiled | RegexOptions.Singleline);
 
         private readonly IHttpContextAccessor _httpContextAccessor;
 

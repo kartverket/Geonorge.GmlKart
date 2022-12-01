@@ -109,13 +109,26 @@ namespace Geonorge.GmlKart.Application.Services
 
         private static List<XElement> GetFeatureMembers(XDocument document)
         {
-            var localName = document.Root.Elements()
-                .Any(element => element.Name.LocalName == "featureMember") ? "featureMember" : "featureMembers";
+            var featureMemberName = GetFeatureMemberName(document);
 
             return document.Root.Elements()
-                .Where(element => element.Name.LocalName == localName)
+                .Where(element => element.Name.LocalName == featureMemberName)
                 .SelectMany(element => element.Elements())
                 .ToList();
+        }
+
+        private static string GetFeatureMemberName(XDocument document)
+        {
+            if (document.Root.Elements().Any(element => element.Name.LocalName == "featureMember"))
+                return "featureMember";
+
+            if (document.Root.Elements().Any(element => element.Name.LocalName == "featureMembers"))
+                return "featureMembers";
+
+            if (document.Root.Elements().Any(element => element.Name.LocalName == "member"))
+                return "member";
+
+            return "featureMember";
         }
 
         private static bool TryCreateGeometry(XElement geoElement, out Geometry geometry)

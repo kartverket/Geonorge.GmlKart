@@ -31,7 +31,7 @@ namespace Geonorge.GmlKart.Web.Controllers
                 var formData = await _multipartRequestService.GetFileFromMultipart();
 
                 if (formData == null)
-                    return BadRequest();
+                    return BadRequest("Filen er ikke en gyldig GML-fil!");
 
                 var document = await _mapDocumentService.CreateMapDocumentAsync(formData.File, formData.Validate);
                 var serialized = JsonConvert.SerializeObject(document, DefaultJsonSerializerSettings);
