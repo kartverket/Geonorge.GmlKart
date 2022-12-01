@@ -53,7 +53,7 @@ namespace Geonorge.GmlKart.Application.HttpClients.Validation
         {
             try
             {
-                using var content = new MultipartFormDataContent { { new StreamContent(file.OpenReadStream()), "xmlFiles", file.FileName } };
+                using var content = new MultipartFormDataContent { { new StreamContent(file.OpenReadStream()), "files", file.FileName } };
                 using var request = new HttpRequestMessage(HttpMethod.Post, _settings.ApiUrl) { Content = content };
 
                 using var response = await _httpClient.SendAsync(request);
