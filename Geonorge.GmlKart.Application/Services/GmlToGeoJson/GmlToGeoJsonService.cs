@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OSGeo.OGR;
+using OSGeo.OSR;
 using System.Text;
 using System.Xml.Linq;
 using static Geonorge.GmlKart.Application.Constants.Constants;
@@ -17,6 +18,7 @@ namespace Geonorge.GmlKart.Application.Services
 
             var featureMembers = GetFeatureMembers(document);
             var featureCollection = new GeoJsonFeatureCollection();
+            var ct = GetCoordinateTransformation(6172, 23035);
 
             Parallel.ForEach(featureMembers, featureMember =>
             {
@@ -26,7 +28,7 @@ namespace Geonorge.GmlKart.Application.Services
                 if (primaryGeoElement.Value == null)
                     return;
 
-                using var geometry = GetGeometry(primaryGeoElement.Value);
+                using var geometry = GetGeometry(primaryGeoElement.Value, ct);
 
                 if (geometry == null)
                     return;
@@ -83,7 +85,7 @@ namespace Geonorge.GmlKart.Application.Services
 
             foreach (var (elementName, geoElement) in geoElements)
             {
-                using var geometry = GetGeometry(geoElement);
+                using var geometry = GetGeometry(geoElement, null);
 
                 if (geometry == null)
                     continue;
@@ -96,12 +98,27 @@ namespace Geonorge.GmlKart.Application.Services
             return otherGeometries;
         }
 
-        private static Geometry GetGeometry(XElement geoElement)
+        public static CoordinateTransformation GetCoordinateTransformation(int srcEpsg, int destEpsg)
+        {
+            using var srcSr = new SpatialReference(null);
+            srcSr.ImportFromEPSG(srcEpsg);
+
+            using var destSr = new SpatialReference(null);
+            destSr.ImportFromEPSG(destEpsg);
+
+            return new CoordinateTransformation(srcSr, destSr);
+        }
+
+        private static Geometry GetGeometry(XElement geoElement, CoordinateTransformation ct)
         {
             if (!TryCreateGeometry(geoElement, out var geometry))
                 return null;
 
+            /*if (ct != null)
+                geometry.Transform(ct);*/
+
             var linearGeometry = geometry.GetLinearGeometry(0, Array.Empty<string>());
+            
             geometry.Dispose();
 
             return linearGeometry;

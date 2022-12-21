@@ -5,6 +5,7 @@ using Geonorge.GmlKart.Application.Models.Map;
 using Geonorge.GmlKart.Application.Models.Validation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using OSGeo.OSR;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using static Geonorge.GmlKart.Application.Helpers.Helpers;
@@ -65,6 +66,9 @@ namespace Geonorge.GmlKart.Application.Services
                 Styling = GetMapStyling(file)
             };
 
+            if (mapDocument.Epsg == null)
+                throw new MapDocumentException("GML-filen har ingen gyldig EPSG-kode.");
+
             if (!mapDocument.GeoJson.Features.Any())
                 throw new MapDocumentException("GML-filen inneholder ingen gyldige features.");
 
@@ -95,8 +99,10 @@ namespace Geonorge.GmlKart.Application.Services
             if (match == null)
                 return null;
 
-            return new Epsg(match.Groups["epsg"].Value);
+            return Epsg.Create(match.Groups["epsg"].Value);
         }
+
+
 
         private static async Task<XDocument> LoadXDocumentAsync(IFormFile file)
         {
