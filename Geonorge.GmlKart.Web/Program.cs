@@ -3,6 +3,7 @@ using Geonorge.GmlKart.Application.HttpClients.Validation;
 using Geonorge.GmlKart.Application.Models.Config.Styling;
 using Geonorge.GmlKart.Application.Services;
 using Geonorge.Validator.Web;
+using MaxRev.Gdal.Core;
 using Microsoft.AspNetCore.ResponseCompression;
 using OSGeo.OGR;
 using Serilog;
@@ -42,7 +43,7 @@ services.AddHttpClient<IProxyHttpClient, ProxyHttpClient>();
 services.Configure<ValidationSettings>(configuration.GetSection(ValidationSettings.SectionName));
 services.Configure<StylingSettings>(configuration.GetSection("Styling"));
 
-Ogr.RegisterAll();
+GdalBase.ConfigureAll();
 Ogr.UseExceptions();
 
 Log.Logger = new LoggerConfiguration()

@@ -1,20 +1,45 @@
-﻿using static Geonorge.GmlKart.Application.Constants.Constants;
+﻿using OSGeo.OSR;
 
 namespace Geonorge.GmlKart.Application.Models.Map
 {
     public class Epsg
     {
-        public string Code { get; set; }
-        public string Description { get; set; }
+        public string Code { get; private set; }
+        public string Code2d { get; private set; }
+        public string Description { get; private set; }
 
-        public Epsg()
+        public static Epsg Create(string epsgString)
         {
-        }
+            if (!int.TryParse(epsgString, out var epsgCode))
+                return null;
 
-        public Epsg(string code)
-        {
-            Code = $"EPSG:{code}";
-            Description = EpsgCodes.ContainsKey(code) ? EpsgCodes[code] : null;
+            var epsg = new Epsg
+            {
+                Code = $"EPSG:{epsgString}",
+                Code2d = $"EPSG:{epsgString}"
+            };
+
+            try
+            {
+                using var spatialReference = new SpatialReference(null);
+                spatialReference.ImportFromEPSG(epsgCode);
+
+                epsg.Description = spatialReference.GetName();
+
+                if (spatialReference.IsCompound() != 1)
+                    return epsg;
+
+                var projCsString = spatialReference.GetAuthorityCode("projcs");
+
+                if (projCsString != null)
+                    epsg.Code2d = $"EPSG:{projCsString}";
+
+                return epsg;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
