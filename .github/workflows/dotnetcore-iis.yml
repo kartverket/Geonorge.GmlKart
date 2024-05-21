@@ -1,0 +1,36 @@
+name: .NET Core Deploy to IIS
+
+on: 
+  push:
+    branches:
+    - "Development"
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+
+    runs-on: self-hosted
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    # dotnet build and publish
+    - name: Build with dotnet
+      run: dotnet build --configuration Release .\dotnet-core-gmlkart
+
+    - name: dotnet publish 
+      run: |
+        dotnet publish -c Release -o dotnetcoregmlkart .\dotnet-core-gmlkart
+
+    - name: Deploy to IIS
+      run: |
+        stop-webapppool gmlkart
+        stop-iissite -Name gmlkart -Confirm: $false
+        Copy-Item ./dotnetcoregmlkart/* C:/actions-websites/gmlkart/api -Recurse -Force
+        start-webapppool gmlkart
+        start-iissite gmlkart
