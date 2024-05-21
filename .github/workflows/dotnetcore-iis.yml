@@ -21,11 +21,11 @@ jobs:
     
     # dotnet build and publish
     - name: Build with dotnet
-      run: dotnet build --configuration Release .\dotnet-core-gmlkart
+      run: dotnet build --configuration Release .\Geonorge.GmlKart
 
     - name: dotnet publish 
       run: |
-        dotnet publish -c Release -o dotnetcoregmlkart .\dotnet-core-gmlkart
+        dotnet publish -c Release -o dotnetcoregmlkart .\Geonorge.GmlKart
 
     - name: Deploy to IIS
       run: |
