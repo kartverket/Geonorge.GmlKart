@@ -25,12 +25,12 @@ jobs:
 
     - name: dotnet publish 
       run: |
-        dotnet publish -c Release -o dotnetcoregmlkart .\Geonorge.GmlKart.Web
-        Compress-Archive dotnetcoregmlkart dotnetcoregmlkart${{ github.run_id }}.zip
+        dotnet publish -c Release -o dotnetcoregmlkart${{ github.run_id }}.zip" .\Geonorge.GmlKart.Web
+        # Compress-Archive dotnetcoregmlkart dotnetcoregmlkart${{ github.run_id }}.zip
 
     - name: Deploy Application
       shell: cmd
       run: |
-        '"C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" -verb:sync -source:apphostconfig="gmlkart\api" -dest:package=C:\actions-runner\_work\Geonorge.GmlKart\Geonorge.GmlKart\dotnetcoregmlkart${{ github.run_id }}.zip -declareParam:name="api",kind=DestinationVirtualDirectory,scope="gmlkart",defaultValue="c:\temp"'
-        '"C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" -verb:sync -source:package=C:\actions-runner\_work\Geonorge.GmlKart\Geonorge.GmlKart\dotnetcoregmlkart${{ github.run_id }}.zip -dest:apphostconfig="gmlkart/api" -setParam:name="api",value=C:\actions-runner\_work\Geonorge.GmlKart\Geonorge.GmlKart\dotnetcoregmlkart${{ github.run_id }}.zip '
+        '"C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" -verb:sync -source:apphostconfig="gmlkart\api" -dest:package="C:\actions-runner\_work\Geonorge.GmlKart\Geonorge.GmlKart\dotnetcoregmlkart${{ github.run_id }}" -declareParam:name="api",kind=DestinationVirtualDirectory,scope="gmlkart",defaultValue="c:\temp"'
+        '"C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" -verb:sync -source:package="C:\actions-runner\_work\Geonorge.GmlKart\Geonorge.GmlKart\dotnetcoregmlkart${{ github.run_id }}" -dest:apphostconfig="gmlkart/api" -setParam:name="api",value="C:\actions-runner\_work\Geonorge.GmlKart\Geonorge.GmlKart\dotnetcoregmlkart${{ github.run_id }}" '
       
