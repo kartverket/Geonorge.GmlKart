@@ -3,7 +3,7 @@ name: .NET Core Deploy to IIS
 on: 
   push:
     branches:
-    - "Development"
+    - "GEON-936"
   workflow_dispatch:
 
 jobs:
