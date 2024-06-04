@@ -30,4 +30,4 @@ jobs:
 
     - name: Deploy Application
       shell: cmd
-      run: '"C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" -verb:sync -source:package="dotnetcoregmlkart${{ github.run_id }}.zip" -dest:contentPath="gmlkart.dev.geonorge.no/api"'
+      run: '"C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" -verb:sync -source:package="dotnetcoregmlkart${{ github.run_id }}.zip" -dest:contentPath="http://gmlkart.dev.geonorge.no/api"'
