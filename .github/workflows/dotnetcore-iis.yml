@@ -28,10 +28,6 @@ jobs:
         dotnet publish -c Release -o dotnetcoregmlkart .\Geonorge.GmlKart.Web
         Compress-Archive dotnetcoregmlkart dotnetcoregmlkart${{ github.run_id }}.zip
 
-    - name: Deploy to IIS
-      run: |
-        # stop-webapppool gmlkart
-        # stop-iissite -Name gmlkart -Confirm: $false
-        # Copy-Item ./dotnetcoregmlkart/* C:/actions-websites/gmlkart/api -Recurse -Force
-        # start-webapppool gmlkart
-        # start-iissite gmlkart
+    - name: Deploy Application
+      shell: cmd
+      run: '"C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" -verb:sync -source:package="dotnetcoregmlkart${{ github.run_id }}.zip" -dest:contentPath="gmlkart.dev.geonorge.no/api"'
