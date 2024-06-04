@@ -25,7 +25,7 @@ jobs:
 
     - name: dotnet publish 
       run: |
-        dotnet publish -c Release -o dotnetcoregmlkart${{ github.run_id }}.zip" .\Geonorge.GmlKart.Web
+        dotnet publish -c Release -o dotnetcoregmlkart${{ github.run_id }} .\Geonorge.GmlKart.Web
         # Compress-Archive dotnetcoregmlkart dotnetcoregmlkart${{ github.run_id }}.zip
 
     - name: Deploy Application
