@@ -18,7 +18,15 @@ jobs:
       uses: actions/setup-dotnet@v4
       # with:
         # dotnet-version: 8.0.100
-    
+        
+    #substitute appsettings entries to appsettings json file
+    - name: App Settings Variable Substitution
+      uses: microsoft/variable-substitution@v1
+      with:
+        files: '.\Geonorge.GmlKart.Web\appsettings.json'
+      env:
+        Validation.ApiUrl: ${{ env.VALIDATIONAPIURL }}
+        
     # dotnet build and publish
     - name: Build with dotnet
       run: dotnet build --configuration Release .\Geonorge.GmlKart.Web
