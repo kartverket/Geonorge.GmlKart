@@ -26,7 +26,7 @@ jobs:
       with:
         files: '.\Geonorge.GmlKart.Web\appsettings.json'
       env:
-        Validation.ApiUrl: ${{ env.VALIDATIONAPIURL }}
+        Development.Validation.ApiUrl: ${{ env.VALIDATIONAPIURL }}
         
     # dotnet build and publish
     - name: Build with dotnet
