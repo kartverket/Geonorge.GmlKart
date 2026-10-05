@@ -1,4 +1,4 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Geonorge.Validator.Web
@@ -14,17 +14,17 @@ namespace Geonorge.Validator.Web
             {
                 Schema = new OpenApiSchema()
                 {
-                    Type = "object",
-                    Properties =
+                    Type = JsonSchemaType.Object,
+                    Properties = new Dictionary<string, IOpenApiSchema>
                     {
                         ["gmlFile"] = new OpenApiSchema
                         {
-                            Type = "file",
+                            Type = JsonSchemaType.String,
                             Format = "binary"
                         },
                         ["validate"] = new OpenApiSchema
                         {
-                            Type = "boolean"
+                            Type = JsonSchemaType.Boolean
                         }
                     },
                     Required = new HashSet<string>() { "gmlFile" }
@@ -32,7 +32,7 @@ namespace Geonorge.Validator.Web
             };
             operation.RequestBody = new OpenApiRequestBody
             {
-                Content = { ["multipart/form-data"] = mediaType }
+                Content = new Dictionary<string, OpenApiMediaType> { ["multipart/form-data"] = mediaType }
             };
         }
     }
